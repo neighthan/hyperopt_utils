@@ -219,7 +219,7 @@ def model_from_space_sample(space_sample: dict):
 
 
 def hyper_optimize(funcs, exp_key: str, max_evals: int, n_workers: int=1,
-                   local_vars=None, space_args=None, keep_files: bool=False):
+                   local_vars=None, space_args='', keep_files: bool=False):
     tmp_dir = '/cluster/nhunt/.tmp/'
 
     dir_path = f"{tmp_dir}{round(random() * 1e10)}/"
