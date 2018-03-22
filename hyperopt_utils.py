@@ -5,8 +5,10 @@ from jupyter_utils.jupyter_utils import get_nb_imports, get_notebook_name
 from tensorflow.python.keras import layers as k_layers
 from tensorflow.python.keras.models import Sequential
 from hyperopt import hp
+from hyperopt.mongoexp import MongoTrials
 from random import random
 from typing import List, Callable, Optional, Dict, Any
+import pandas as pd
 
 
 def flatten_dict(d: dict) -> dict:
@@ -261,3 +263,27 @@ def hyper_optimize(funcs, exp_key: str, max_evals: int, n_workers: int=1,
 
         if keep_files:
             Popen(f'cp {dir_path}/* {tmp_dir}/'.split(' '))
+
+
+def trials_from_key(exp_key):
+    assert exp_key is not None, "Must provide `trials` or `exp_key`."
+    return MongoTrials('mongo://localhost:9876/hyperopt/jobs', exp_key)
+
+
+def plot_losses(trials=None, exp_key=None):
+    trials = trials if trials is not None else trials_from_key(exp_key)
+    trials.refresh()
+
+    losses = pd.Series([loss for loss in trials.losses() if loss is not None and loss < 1e12])
+
+    losses.plot(style='.')
+    losses.cummin().plot()
+    losses.rolling(window=10, min_periods=1).mean().plot()
+
+
+def get_best_config(trials=None, exp_key=None):
+    trials = trials if trials is not None else trials_from_key(exp_key)
+    trials.refresh()
+    results = [result.to_dict() for result in trials.results]
+    best_params = dict(min(results, key=lambda result: result.get('loss', 1e12)))
+    return best_params
